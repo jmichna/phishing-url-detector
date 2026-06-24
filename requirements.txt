@@ -1,0 +1,9 @@
+# Luzne dolne ograniczenia - pip pobierze najnowsze wersje z gotowymi
+# paczkami (wheel) dla Twojego Pythona, takze 3.13. Bez kompilacji z Rusta.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.9
+pydantic-settings>=2.5
+tldextract>=5.1
+requests>=2.32
+python-dotenv>=1.0

@@ -1,0 +1,6 @@
+# Lokalna lista znanych zlosliwych wzorcow/domen (jeden wpis na linie).
+# Dopasowanie typu 'substring' do calego URL. Linie z '#' sa ignorowane.
+malware-test.com
+phishing-example.net
+free-gift-card.top
+account-verify-now.click

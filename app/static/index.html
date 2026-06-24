@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing URL Detector</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>🛡️ Phishing URL Detector</h1>
+  <p class="sub">Wpisz adres URL, aby sprawdzić cechy phishingowe, wynik (0–100) i listy zagrożeń.</p>
+
+  <form id="form">
+    <input id="url" type="text" placeholder="np. http://paypal-secure-login.tk/account/verify" required>
+    <button id="btn" type="submit">Analizuj</button>
+  </form>
+  <div class="examples">
+    Przykłady:
+    <a data-u="https://www.google.com">google.com (bezpieczny)</a>
+    <a data-u="http://paypal-secure-login.tk/account/verify?id=1">fałszywy PayPal</a>
+    <a data-u="http://192.168.10.5/login/secure">adres IP</a>
+    <a data-u="https://xn--pypal-4ve.com/signin">homoglyph (IDN)</a>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<script>
+const form = document.getElementById('form');
+const urlInput = document.getElementById('url');
+const btn = document.getElementById('btn');
+const result = document.getElementById('result');
+
+document.querySelectorAll('.examples a').forEach(a => {
+  a.addEventListener('click', () => { urlInput.value = a.dataset.u; form.requestSubmit(); });
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = urlInput.value.trim();
+  if (!url) return;
+  btn.disabled = true; btn.textContent = 'Analizuję…';
+  result.innerHTML = '<p class="muted" style="margin-top:1.5rem">Analiza w toku…</p>';
+  try {
+    const resp = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    render(await resp.json());
+  } catch (err) {
+    result.innerHTML = '<div class="card err">Błąd analizy: ' + err.message + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Analizuj';
+  }
+});
+
+function colorFor(v) { return v === 'phishing' ? 'var(--phish)' : v === 'suspicious' ? 'var(--susp)' : 'var(--safe)'; }
+
+function render(d) {
+  const rows = d.features.map(f => `
+    <tr>
+      <td>${f.triggered ? '<span class="hit">⚠ ' + f.name + '</span>' : '<span class="ok">✓ ' + f.name + '</span>'}</td>
+      <td class="muted">${f.description}</td>
+      <td>${f.triggered ? '+' + f.weight : '—'}</td>
+      <td class="muted">${f.detail || ''}</td>
+    </tr>`).join('');
+
+  const bl = d.blacklist ? `<div class="bl">Lista zagrożeń (${d.blacklist.source}):
+      ${d.blacklist.listed
+        ? '<span class="hit">trafienie</span> — ' + (d.blacklist.detail || '')
+        : '<span class="ok">brak trafień</span>'}</div>` : '';
+
+  result.innerHTML = `
+    <div class="card">
+      <span class="verdict v-${d.verdict}">${d.verdict}</span>
+      <div class="url" style="margin-top:.6rem">${d.url}</div>
+      <div class="score-row">
+        <div class="score-num" style="color:${colorFor(d.verdict)}">${d.score}<span class="muted" style="font-size:1rem">/100</span></div>
+        <div class="bar"><span style="width:${d.score}%; background:${colorFor(d.verdict)}"></span></div>
+      </div>
+      <div class="muted">Uruchomione cechy: ${d.triggered_count} z ${d.features.length}</div>
+      ${bl}
+      <table>
+        <thead><tr><th>Cecha</th><th>Opis</th><th>Waga</th><th>Szczegóły</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+</script>
+</body>
+</html>
