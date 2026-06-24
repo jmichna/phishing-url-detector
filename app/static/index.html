@@ -71,7 +71,7 @@ function render(d) {
   const bl = d.blacklist ? `<div class="bl">Lista zagrożeń (${d.blacklist.source}):
       ${d.blacklist.listed
         ? '<span class="hit">trafienie</span> — ' + (d.blacklist.detail || '')
-        : '<span class="ok">brak trafień</span>'}</div>` : '';
+        : '<span class="ok">brak trafień</span>' + (d.blacklist.detail ? ' <span class="muted">(' + d.blacklist.detail + ')</span>' : '')}</div>` : '';
 
   result.innerHTML = `
     <div class="card">

@@ -87,16 +87,18 @@ THREAT_CLIENT_MODE=live
 
 W trybie live klient pyta po kolei dostepne zrodla i zwraca pierwsze trafienie:
 
-**PhishTank** dziala **nawet bez klucza** (z nizszym limitem zapytan), wiec samo
-ustawienie `THREAT_CLIENT_MODE=live` juz wlacza realne sprawdzanie. Aby podniesc
-limit, zaloz darmowe konto na https://phishtank.org, pobierz klucz aplikacji i
-wpisz go jako `PHISHTANK_APP_KEY`.
+**PhishTank**: od 2025 r. rejestracja nowych kluczy API jest *czasowo wylaczona*,
+a endpoint (za Cloudflare) odrzuca zapytania bez klucza bledem `403 Forbidden`.
+Dlatego PhishTank jest odpytywany **tylko gdy podasz `PHISHTANK_APP_KEY`** (jesli
+masz starszy klucz). Bez klucza zrodlo jest pomijane - reszta dziala normalnie.
+Aplikacja obsluguje taka odmowe bez awarii (graceful degradation).
 
-**Google Safe Browsing** wymaga klucza API:
+**Google Safe Browsing** to zalecane zrodlo do dema na zywo. Wymaga klucza API:
 1. wejdz na https://console.cloud.google.com i zaloz (lub wybierz) projekt,
-2. w bibliotece API wlacz usluge *Safe Browsing API*,
-3. w sekcji *Credentials* utworz *API key*,
-4. wpisz go do `.env` jako `GOOGLE_SAFE_BROWSING_API_KEY`.
+2. APIs & Services -> Library -> wyszukaj *Safe Browsing API* -> Enable,
+3. APIs & Services -> Credentials -> Create credentials -> API key, skopiuj,
+4. wpisz go do `.env` jako `GOOGLE_SAFE_BROWSING_API_KEY` i zrestartuj uvicorn,
+5. test: `https://testsafebrowsing.appspot.com/s/phishing.html` -> trafienie.
 
 > Uwaga: Safe Browsing v4 jest oznaczone jako *deprecated* (nastepca: v5 / Web Risk
 > API), ale endpoint nadal dziala i wystarcza do projektu. Wymiana na inne zrodlo

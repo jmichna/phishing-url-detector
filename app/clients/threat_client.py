@@ -57,15 +57,31 @@ class ExternalThreatClient(ThreatClient):
                 )
         return BlacklistResult(listed=False, source="mock")
 
-    # --- tryb live: pyta dostepne zrodla, pierwsze trafienie wygrywa ------
+    # --- tryb live: pyta skonfigurowane zrodla, pierwsze trafienie wygrywa --
     def _check_live(self, url: str) -> BlacklistResult:
-        last: BlacklistResult | None = None
+        results: list[BlacklistResult] = []
+        # Google Safe Browsing - tylko gdy podano klucz API.
         if self._settings.google_safe_browsing_api_key:
-            last = self._check_google(url)
-            if last.listed:
-                return last
-        last = self._check_phishtank(url)
-        return last
+            results.append(self._check_google(url))
+        # PhishTank - tylko gdy podano app_key (bez klucza endpoint zwraca 403).
+        if self._settings.phishtank_app_key:
+            results.append(self._check_phishtank(url))
+
+        # 1) pierwsze trafienie wygrywa
+        for r in results:
+            if r.listed:
+                return r
+        # 2) brak trafien: preferuj wynik bez bledu zapytania
+        for r in results:
+            if "blad zapytania" not in r.detail:
+                return r
+        # 3) wszystkie z bledem albo nic nie skonfigurowano
+        if results:
+            return results[-1]
+        return BlacklistResult(
+            listed=False, source="none",
+            detail="tryb live bez skonfigurowanego zrodla (ustaw klucz API)",
+        )
 
     # --- Google Safe Browsing (v4 Lookup) ---------------------------------
     def _check_google(self, url: str) -> BlacklistResult:
